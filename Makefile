@@ -1,6 +1,6 @@
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 current_dir := $(dir $(mkfile_path))
-hive_home := $(addsuffix tools/apache-hive-2.1.0-bin, $(current_dir))
+hive_home := $(addsuffix tools/apache-hive-2.1.1-bin, $(current_dir))
 hadoop_home := $(addsuffix tools/hadoop-2.7.2, $(current_dir))
 spark_home := $(addsuffix tools/spark-2.0.0-bin, $(current_dir))
 
@@ -20,7 +20,7 @@ download_spark:
 
 download_hive:
 	mkdir -p ${current_dir}tools
-	cd ${current_dir}tools; wget http://www-us.apache.org/dist/hive/hive-2.1.0/apache-hive-2.1.0-bin.tar.gz && tar -xvf apache-hive-2.1.0-bin.tar.gz && rm -rf apache-hive-2.1.0-bin.tar.gz
+	cd ${current_dir}tools; wget http://www-us.apache.org/dist/hive/hive-2.1.1/apache-hive-2.1.1-bin.tar.gz && tar -xvf apache-hive-2.1.1-bin.tar.gz && rm -rf apache-hive-2.1.1-bin.tar.gz
 
 configure: configure_hadoop configure_spark
 
