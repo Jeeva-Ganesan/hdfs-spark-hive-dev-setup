@@ -80,7 +80,7 @@ configure_hive:
 	echo '<property><name>javax.jdo.option.ConnectionUserName</name><value>hive</value></property>' >> ${hive_home}/conf/hive-site.xml
 	echo '<property><name>javax.jdo.option.ConnectionPassword</name><value>hive</value></property>' >> ${hive_home}/conf/hive-site.xml
 	echo '<property><name>datanucleus.autoCreateSchema</name><value>false</value></property>' >> ${hive_home}/conf/hive-site.xml
-	echo '<property><name>hive.metastore.uris</name><value>thrift://127.0.0.1:9083</value></property>' >> ${hive_home}/conf/hive-site.xml
+	echo '<property><name>hive.metastore.uris</name><value>thrift://0.0.0.0:9083</value></property>' >> ${hive_home}/conf/hive-site.xml
 	echo '</configuration>' >> ${hive_home}/conf/hive-site.xml
 	#Copy hive-stie.xml to Spark -- necessary to run Spark apps with configured metastore
 	cp ${hive_home}/conf/hive-site.xml ${spark_home}/conf/
