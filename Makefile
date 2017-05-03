@@ -54,10 +54,10 @@ configure_spark:
 	cp ${spark_home}/conf/log4j.properties.template ${spark_home}/conf/log4j.properties
 	sed -i "s#log4j.rootCategory=INFO, console#log4j.rootCategory=WARN, console#g" ${spark_home}/conf/log4j.properties
 	# Set up Spark environment variables
-	echo 'export SPARK_LOCAL_IP=127.0.0.1' >> ${spark_home}/conf/spark-env.sh
+	echo 'export SPARK_LOCAL_IP=0.0.0.0' >> ${spark_home}/conf/spark-env.sh
 	echo 'export HADOOP_CONF_DIR="${hadoop_home}/etc/hadoop"'>> ${spark_home}/conf/spark-env.sh
 	echo 'export SPARK_DIST_CLASSPATH="$(shell ${hadoop_home}/bin/hadoop classpath)"'>> ${spark_home}/conf/spark-env.sh
-	echo 'export SPARK_MASTER_IP=127.0.0.1'>> ${spark_home}/conf/spark-env.sh
+	echo 'export SPARK_MASTER_IP=0.0.0.0'>> ${spark_home}/conf/spark-env.sh
 	mkdir -p ${current_dir}data/spark-rdd
 	echo 'export SPARK_LOCAL_DIRS=${current_dir}data/spark-rdd'
 
