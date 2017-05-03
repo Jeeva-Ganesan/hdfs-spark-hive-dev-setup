@@ -3,7 +3,7 @@
 This repository provides the installation instructions for
 * Hadoop 2.7.2,
 * Spark 2.0.0 and
-* Hive 2.1.0
+* Hive 2.1.1
 for development on a local machine. SANSA stack developers use this environment setup for development and debugging. As we run our production code in docker containers, docker-driven CI is a part of our delivery cycle as well.
 
 Our developers use Ubuntu LTS and organize their work inside dedicated ~/Workspace directory. If you do not know where to install your HDFS/Spark/Hive setup, then put it into ~/Workspace/hadoop-spark-hive directory. After the installation the directory will be contains the following:
@@ -12,7 +12,7 @@ Our developers use Ubuntu LTS and organize their work inside dedicated ~/Workspa
 ├── Makefile
 ├── src
 └── tools
-    ├── apache-hive-2.1.0-bin
+    ├── apache-hive-2.1.1-bin
     ├── hadoop-2.7.2
     └── spark-1.6.2-bin-without-hadoop
 ```
@@ -38,7 +38,7 @@ make download
 After this step you should have tools/ folder with the following structure:
 ```
 └── tools
-    ├── apache-hive-2.1.0-bin
+    ├── apache-hive-2.1.1-bin
     ├── hadoop-2.7.2
     └── spark-2.0.0-bin
 ```
@@ -95,7 +95,7 @@ make start_hive_beeline_client
 Execute some queries to see if the Hive server works properly:
 ```
 CREATE TABLE pokes (foo INT, bar STRING);
-LOAD DATA LOCAL INPATH './tools/apache-hive-2.1.0-bin/examples/files/kv1.txt' OVERWRITE INTO TABLE pokes;
+LOAD DATA LOCAL INPATH './tools/apache-hive-2.1.1-bin/examples/files/kv1.txt' OVERWRITE INTO TABLE pokes;
 DESCRIBE pokes;
 ```
 
@@ -111,7 +111,7 @@ make start_hive_beeline_client
 Then load the sample data as follows:
 ```
 CREATE TABLE pokes (foo INT, bar STRING);
-LOAD DATA LOCAL INPATH './tools/apache-hive-2.1.0-bin/examples/files/kv1.txt' OVERWRITE INTO TABLE pokes;
+LOAD DATA LOCAL INPATH './tools/apache-hive-2.1.1-bin/examples/files/kv1.txt' OVERWRITE INTO TABLE pokes;
 ```
 
 ### Stopping HDFS/Spark/Hive
