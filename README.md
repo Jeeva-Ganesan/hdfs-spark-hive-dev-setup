@@ -6,6 +6,8 @@ This repository provides the installation instructions for
 * Hive 2.1.1
 for development on a local machine. 
 
+*Before using the Makefile, you need to set your JAVA_HOME environment variable.
+
 After the installation the directory will be contains the following:
 ```
 ├── data
