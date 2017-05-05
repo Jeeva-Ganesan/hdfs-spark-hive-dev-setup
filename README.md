@@ -2,11 +2,11 @@
 
 This repository provides the installation instructions for
 * Hadoop 2.8.0,
-* Spark 2.1.1 and
+* Spark 2.1.1 
 * Hive 2.1.1
-for development on a local machine. SANSA stack developers use this environment setup for development and debugging. As we run our production code in docker containers, docker-driven CI is a part of our delivery cycle as well.
+for development on a local machine. 
 
-Our developers use Ubuntu LTS and organize their work inside dedicated ~/Workspace directory. If you do not know where to install your HDFS/Spark/Hive setup, then put it into ~/Workspace/hadoop-spark-hive directory. After the installation the directory will be contains the following:
+After the installation the directory will be contains the following:
 ```
 ├── data
 ├── Makefile
@@ -54,7 +54,7 @@ Start hadoop DFS (distributed file system), basically 1 namenode and 1 datanode:
 make start_hadoop
 ```
 
-Open your browser and go to localhost:50070. If you can open the page and see 1 datanode registered on your namenode, then hadoop setup is finished.
+Open your browser and go to hostname.local:50070. If you can open the page and see 1 datanode registered on your namenode, then hadoop setup is finished.
 
 ### Start Spark
 Start local Spark cluster:
@@ -62,7 +62,7 @@ Start local Spark cluster:
 make start_spark
 ```
 
-Open your browser and go to localhost:8080. If you can open the page and see 1 spark-worker registered with spark-master, then spark setup is finished.
+Open your browser and go to hostname.local:8080. If you can open the page and see 2 spark-worker registered with spark-master, then spark setup is finished.
 
 ### Configure Hive
 Hadoop should be running for Hive configuration:
