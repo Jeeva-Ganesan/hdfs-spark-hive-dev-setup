@@ -1,8 +1,8 @@
 # HDFS/Spark/Hive Local Development Setup
 
 This repository provides the installation instructions for
-* Hadoop 2.7.2,
-* Spark 2.0.0 and
+* Hadoop 2.8.0,
+* Spark 2.1.1 and
 * Hive 2.1.1
 for development on a local machine. SANSA stack developers use this environment setup for development and debugging. As we run our production code in docker containers, docker-driven CI is a part of our delivery cycle as well.
 
@@ -13,8 +13,8 @@ Our developers use Ubuntu LTS and organize their work inside dedicated ~/Workspa
 ├── src
 └── tools
     ├── apache-hive-2.1.1-bin
-    ├── hadoop-2.7.2
-    └── spark-1.6.2-bin-without-hadoop
+    ├── hadoop-2.8.0
+    └── spark-2.1.1-bin-without-hadoop
 ```
 * Makefile. Used for running various tasks such as starting up the hadoop/spark/hive, running interactive shells for spark/hive etc.
 * src/ directory. Contains git repositories with various spark applications.
@@ -26,7 +26,7 @@ Our developers use Ubuntu LTS and organize their work inside dedicated ~/Workspa
 Clone this repository into the folder where you want to create your HDFS/Spark/Hive setup:
 ```
 mkdir -p ~/Workspace/hadoop-spark-hive && cd ~/Workspace/hadoop-spark-hive
-git clone https://github.com/earthquakesan/hdfs-spark-hive-dev-setup ./
+git clone https://github.com/daniellqueiroz/hdfs-spark-hive-dev-setup ./
 ```
 
 ### Download HDFS/Spark/Hive binaries
@@ -39,8 +39,8 @@ After this step you should have tools/ folder with the following structure:
 ```
 └── tools
     ├── apache-hive-2.1.1-bin
-    ├── hadoop-2.7.2
-    └── spark-2.0.0-bin
+    ├── hadoop-2.8.0
+    └── spark-2.1.1-bin
 ```
 
 ### Configure HDFS/Spark
@@ -70,18 +70,19 @@ Hadoop should be running for Hive configuration:
 make configure_hive
 ```
 
+### Configure Hive Metastore
+PostgreSQL will be installed:
+```
+make configure_hive_postgres_metastore
+```
+
 ### Start Hive Metastore
+PostgreSQL will be installed:
 ```
 make start_hive_postgres_metastore
 ```
-This command will first start Postgresql docker container on your local docker host and then start the metastore (will occupy the terminal session). In case, you need to install docker, please refer [to official installation guide](https://docs.docker.com/engine/installation/). In a case if docker container did not start up completely when you start metastore you will get an error. Then you will need to start metastore manually:
-```
-make activate
-source activate
-hive --service metastore
-```
 
-### Start Hive
+### Start Hive Server
 Run the Hive server (it will occupy the terminal session, providing server logs to it):
 ```
 make start_hive_server
