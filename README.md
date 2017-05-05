@@ -71,13 +71,11 @@ make configure_hive
 ```
 
 ### Configure Hive Metastore
-PostgreSQL will be installed:
 ```
 make configure_hive_postgres_metastore
 ```
 
 ### Start Hive Metastore
-PostgreSQL will be installed:
 ```
 make start_hive_postgres_metastore
 ```
