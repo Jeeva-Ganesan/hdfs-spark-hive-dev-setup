@@ -1,8 +1,9 @@
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 current_dir := $(dir $(mkfile_path))
 hive_home := $(addsuffix tools/apache-hive-2.1.1-bin, $(current_dir))
-hadoop_home := $(addsuffix tools/hadoop-2.7.2, $(current_dir))
-spark_home := $(addsuffix tools/spark-2.0.0-bin, $(current_dir))
+hadoop_home := $(addsuffix tools/hadoop-2.8.0, $(current_dir))
+spark_home := $(addsuffix tools/spark-2.1.1-bin-without-hadoop, $(current_dir))
+host_name := $(addsufix .local, $(hostname))
 
 #########################################
 # Configuration and start/stop commands #
@@ -12,11 +13,11 @@ download: download_hadoop download_spark download_hive
 
 download_hadoop:
 	mkdir -p ${current_dir}tools
-	cd ${current_dir}tools; wget http://www-us.apache.org/dist/hadoop/common/hadoop-2.7.2/hadoop-2.7.2.tar.gz && tar -xvf hadoop-2.7.2.tar.gz && rm -rf hadoop-2.7.2.tar.gz
+	cd ${current_dir}tools; wget http://www-us.apache.org/dist/hadoop/common/hadoop-2.8.0/hadoop-2.8.0.tar.gz && tar -xvf hadoop-2.8.0.tar.gz && rm -rf hadoop-2.8.0.tar.gz
 
 download_spark:
 	mkdir -p ${current_dir}tools
-	cd ${current_dir}tools; wget https://dl.dropboxusercontent.com/u/4882345/packages/spark-2.0.0-bin.tgz && tar -xvf spark-2.0.0-bin.tgz && rm -rf spark-2.0.0-bin.tgz
+	cd ${current_dir}tools; wget http://www-us.apache.org/dist/spark/spark-2.1.1/spark-2.1.1-bin-without-hadoop.tgz && tar -xvf spark-2.1.1-bin-without-hadoop.tgz && rm -rf spark-2.1.1-bin-without-hadoop.tgz
 
 download_hive:
 	mkdir -p ${current_dir}tools
@@ -42,6 +43,7 @@ configure_hadoop:
 	ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
 	cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
 	chmod 0600 ~/.ssh/authorized_keys
+	eval $(ssh-agent)
 	ssh-add
 
 start_hadoop:
@@ -54,10 +56,15 @@ configure_spark:
 	cp ${spark_home}/conf/log4j.properties.template ${spark_home}/conf/log4j.properties
 	sed -i "s#log4j.rootCategory=INFO, console#log4j.rootCategory=WARN, console#g" ${spark_home}/conf/log4j.properties
 	# Set up Spark environment variables
-	echo 'export SPARK_LOCAL_IP=0.0.0.0' >> ${spark_home}/conf/spark-env.sh
-	echo 'export HADOOP_CONF_DIR="${hadoop_home}/etc/hadoop"'>> ${spark_home}/conf/spark-env.sh
-	echo 'export SPARK_DIST_CLASSPATH="$(shell ${hadoop_home}/bin/hadoop classpath)"'>> ${spark_home}/conf/spark-env.sh
-	echo 'export SPARK_MASTER_IP=0.0.0.0'>> ${spark_home}/conf/spark-env.sh
+	echo 'export SPARK_LOCAL_IP=${host_name}' >> ${spark_home}/conf/spark-env.sh
+	echo 'export HADOOP_CONF_DIR="${hadoop_home}/etc/hadoop"' >> ${spark_home}/conf/spark-env.sh
+	echo 'export SPARK_DIST_CLASSPATH="$(shell ${hadoop_home}/bin/hadoop classpath)"' >> ${spark_home}/conf/spark-env.sh
+	echo 'export SPARK_MASTER_HOST=${host_name}' >> ${spark_home}/conf/spark-env.sh
+	echo 'export SPARK_WORKER_CORE=2' >> ${spark_home}/conf/spark-env.sh
+	echo 'export SPARK_WORKER_INSTANCES=2' >> ${spark_home}/conf/spark-env.sh
+	echo 'export SPARK_WORKER_MEMORY=2G' >> ${spark_home}/conf/spark-env.sh
+	echo 'export spark.cores.max=2' >> ${spark_home}/conf/spark-defaults.conf
+	echo 'export spark.executor.memory=2gb' >> ${spark_home}/conf/spark-defaults.conf
 	mkdir -p ${current_dir}data/spark-rdd
 	echo 'export SPARK_LOCAL_DIRS=${current_dir}data/spark-rdd'
 
@@ -93,6 +100,15 @@ configure_hive:
 	${hadoop_home}/bin/hadoop fs -chmod g+w /tmp
 	${hadoop_home}/bin/hadoop fs -chmod g+w /user/hive/warehouse
 
+configure_hive_postgres_metastore:
+	echo "Installing postgres"
+	sudo apt-get install postgresql
+	sudo update-rc.d postgresql enable
+	#set password for postgres master user
+	sudo -c "psqs" - postgres
+	#load metastore configuration
+	./tmp/init-hive-db.sh
+
 start_hive:
 	${hive_home}/bin/hive
 start_hive_server:
@@ -100,12 +116,28 @@ start_hive_server:
 start_hive_beeline_client:
 	${hive_home}/bin/beeline -u jdbc:hive2://localhost:10000
 start_hive_postgres_metastore:
-	echo "Starting postgres docker container"
-	docker run -d --name hive-metastore -p 5432:5432 earthquakesan/hive-metastore-postgresql:2.1.0
-	sleep 5;
 	echo "Running Hive Metastore service"
 	${hive_home}/bin/hive --service metastore
 
+
+#########
+# Samba #
+#########
+
+configure_samba:
+	echo "Installing samba"
+	sudo apt-get install samba
+	sudo smbpasswd -a $(whoami)
+	echo 'export [spark]' >> /etc/samba/smb.conf
+	echo 'export path=${current_dir}' >> /etc/samba/smb.conf
+	echo 'export available=yes' >> /etc/samba/smb.conf
+	echo 'valid users = $(whoami)' >> /etc/samba/smb.conf
+	echo 'read only = no' >> /etc/samba/smb.conf
+	echo 'browseable = yes' >> /etc/samba/smb.conf
+	echo 'public = yes' >> /etc/samba/smb.conf
+	echo 'writable = yes' >> /etc/samba/smb.conf
+	sudo service smbd restart
+	testparm
 
 ######################
 # Interactive shells #
