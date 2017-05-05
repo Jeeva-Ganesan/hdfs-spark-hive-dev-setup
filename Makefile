@@ -105,7 +105,7 @@ configure_hive_postgres_metastore:
 	sudo apt-get install postgresql
 	sudo update-rc.d postgresql enable
 	#set password for postgres master user
-	sudo -c "psqs" - postgres
+	sudo -c "psql" - postgres
 	#load metastore configuration
 	./tmp/init-hive-db.sh
 
