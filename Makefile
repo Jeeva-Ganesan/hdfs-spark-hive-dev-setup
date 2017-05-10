@@ -10,9 +10,9 @@ current_dir := $(dir $(mkfile_path))
 
 # products
 host_name := $(addsufix .local, $(hostname))
-hive_home := $(addsuffix tools/apache-hive-2.1.1-bin, $(current_dir))
-hadoop_home := $(addsuffix tools/hadoop-2.8.0, $(current_dir))
-spark_home := $(addsuffix tools/spark-2.1.1-bin-without-hadoop, $(current_dir))
+hive_home := $(addsuffix tools/apache-hive-$(hive_version)-bin, $(current_dir))
+hadoop_home := $(addsuffix tools/hadoop-$(hadoop_version), $(current_dir))
+spark_home := $(addsuffix tools/spark-$(spark_version)-bin-without-hadoop, $(current_dir))
 
 #########################################
 # Configuration and start/stop commands #
