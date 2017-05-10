@@ -26,20 +26,32 @@ download_hive:
 configure: configure_hadoop configure_spark
 
 configure_hadoop:
-	#install Ubuntu dependencies
+	# install Ubuntu dependencies
 	sudo apt-get install -y ssh rsync
-	#Set JAVA_HOME explicitly
+
+	# set JAVA_HOME
 	sed -i "s#.*export JAVA_HOME.*#export JAVA_HOME=${JAVA_HOME}#g" ${hadoop_home}/etc/hadoop/hadoop-env.sh 
-	#Set HADOOP_CONF_DIR explicitly
+
+	# set HADOOP_CONF_DIR
 	sed -i "s#.*export HADOOP_CONF_DIR.*#export HADOOP_CONF_DIR=${hadoop_home}/etc/hadoop#" ${hadoop_home}/etc/hadoop/hadoop-env.sh
-	#define fs.default.name in core-site.xml
+
+	# core-site.xml
 	sed -i '/<\/configuration>/i <property><name>fs.default.name</name><value>hdfs://localhost:9000</value></property>' ${hadoop_home}/etc/hadoop/core-site.xml
 	sed -i '/<\/configuration>/i <property><name>hadoop.tmp.dir</name><value>file://${current_dir}data/hadoop-tmp</value></property>' ${hadoop_home}/etc/hadoop/core-site.xml
-	#set dfs.replication and dfs.namenode.name.dir
-	mkdir -p ${current_dir}data/hadoop
+
+	# create the directories
+	mkdir -p ${current_dir}data/hadoop-namenode
+	mkdir -p ${current_dir}data/hadoop-datanode
+
+	# hdfs-site.xml
 	sed -i '/<\/configuration>/i <property><name>dfs.replication</name><value>1</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
-	sed -i '/<\/configuration>/i <property><name>dfs.namenode.name.dir</name><value>file://${current_dir}data/hadoop</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
+	sed -i '/<\/configuration>/i <property><name>dfs.namenode.name.dir</name><value>file://${current_dir}data/hadoop-namenode</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
+	sed -i '/<\/configuration>/i <property><name>dfs.datanode.data.dir</name><value>file://${current_dir}data/hadoop-datanode</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
+
+	# format the file system
 	${hadoop_home}/bin/hdfs namenode -format
+
+	# ssh access
 	ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
 	cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
 	chmod 0600 ~/.ssh/authorized_keys
@@ -55,7 +67,8 @@ configure_spark:
 	# Change logging level from INFO to WARN
 	cp ${spark_home}/conf/log4j.properties.template ${spark_home}/conf/log4j.properties
 	sed -i "s#log4j.rootCategory=INFO, console#log4j.rootCategory=WARN, console#g" ${spark_home}/conf/log4j.properties
-	# Set up Spark environment variables
+
+	# spark-env.sh
 	echo 'export SPARK_LOCAL_IP=${host_name}' >> ${spark_home}/conf/spark-env.sh
 	echo 'export HADOOP_CONF_DIR="${hadoop_home}/etc/hadoop"' >> ${spark_home}/conf/spark-env.sh
 	echo 'export SPARK_DIST_CLASSPATH="$(shell ${hadoop_home}/bin/hadoop classpath)"' >> ${spark_home}/conf/spark-env.sh
@@ -63,8 +76,12 @@ configure_spark:
 	echo 'export SPARK_WORKER_CORE=2' >> ${spark_home}/conf/spark-env.sh
 	echo 'export SPARK_WORKER_INSTANCES=2' >> ${spark_home}/conf/spark-env.sh
 	echo 'export SPARK_WORKER_MEMORY=2G' >> ${spark_home}/conf/spark-env.sh
+
+	# spark-defaults.conf
 	echo 'export spark.cores.max=2' >> ${spark_home}/conf/spark-defaults.conf
 	echo 'export spark.executor.memory=2gb' >> ${spark_home}/conf/spark-defaults.conf
+
+	# create the directory
 	mkdir -p ${current_dir}data/spark-rdd
 	echo 'export SPARK_LOCAL_DIRS=${current_dir}data/spark-rdd'
 
@@ -74,14 +91,15 @@ stop_spark:
 	${spark_home}/sbin/stop-all.sh
 
 configure_hive:
+	# install jbdc postgres driver
 	echo "Installing JDBC for Java 8. If you use other Java version see: https://jdbc.postgresql.org/download.html#current"
 	wget https://jdbc.postgresql.org/download/postgresql-9.4.1209.jar
 	mv postgresql-9.4.1209.jar ${hive_home}/lib/
-	#enable JDBC connection
+
+	# hive-site.xml
 	echo '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' >> ${hive_home}/conf/hive-site.xml
 	echo '<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>' >> ${hive_home}/conf/hive-site.xml
 	echo '<configuration>' >> ${hive_home}/conf/hive-site.xml
-	#echo '<property><name>javax.jdo.option.ConnectionURL</name><value>jdbc:derby:;databaseName=${current_dir}metastore_db;create=true</value></property>' >> ${hive_home}/conf/hive-site.xml
 	echo '<property><name>javax.jdo.option.ConnectionURL</name><value>jdbc:postgresql://localhost/metastore</value></property>' >> ${hive_home}/conf/hive-site.xml
 	echo '<property><name>javax.jdo.option.ConnectionDriverName</name><value>org.postgresql.Driver</value></property>' >> ${hive_home}/conf/hive-site.xml
 	echo '<property><name>javax.jdo.option.ConnectionUserName</name><value>hive</value></property>' >> ${hive_home}/conf/hive-site.xml
@@ -89,23 +107,29 @@ configure_hive:
 	echo '<property><name>datanucleus.autoCreateSchema</name><value>false</value></property>' >> ${hive_home}/conf/hive-site.xml
 	echo '<property><name>hive.metastore.uris</name><value>thrift://127.0.0.1:9083</value></property>' >> ${hive_home}/conf/hive-site.xml
 	echo '</configuration>' >> ${hive_home}/conf/hive-site.xml
-	#Copy hive-stie.xml to Spark -- necessary to run Spark apps with configured metastore
+
+	# copy hive-site.xml to Spark -- necessary to run Spark apps with configured metastore
 	cp ${hive_home}/conf/hive-site.xml ${spark_home}/conf/
-	#export environment variables
+
+	# hive-env.sh
 	echo 'export HADOOP_HOME="${hadoop_home}"' >> ${hive_home}/conf/hive-env.sh
 	echo 'export HIVE_HOME="${hive_home}"' >> ${hive_home}/conf/hive-env.sh
-	#Create hdfs folders
+
+	# create hdfs folders
 	${hadoop_home}/bin/hadoop fs -mkdir -p /tmp
 	${hadoop_home}/bin/hadoop fs -mkdir -p /user/hive/warehouse
 	${hadoop_home}/bin/hadoop fs -chmod g+w /tmp
 	${hadoop_home}/bin/hadoop fs -chmod g+w /user/hive/warehouse
 
 configure_hive_postgres_metastore:
+	# install postgres
 	echo "Installing postgres"
 	sudo apt-get install postgresql
 	sudo update-rc.d postgresql enable
+
 	#set password for postgres master user
 	sudo -c "psql" - postgres
+
 	#load metastore configuration
 	./tmp/init-hive-db.sh
 
@@ -120,14 +144,17 @@ start_hive_postgres_metastore:
 	${hive_home}/bin/hive --service metastore
 
 
-#########
-# Samba #
-#########
+############################
+# Samba (share VM folders) #
+############################
 
 configure_samba:
+	# install samba
 	echo "Installing samba"
 	sudo apt-get install samba
 	sudo smbpasswd -a $(whoami)
+
+	# smb.conf
 	echo 'export [spark]' >> /etc/samba/smb.conf
 	echo 'export path=${current_dir}' >> /etc/samba/smb.conf
 	echo 'export available=yes' >> /etc/samba/smb.conf
@@ -136,6 +163,8 @@ configure_samba:
 	echo 'browseable = yes' >> /etc/samba/smb.conf
 	echo 'public = yes' >> /etc/samba/smb.conf
 	echo 'writable = yes' >> /etc/samba/smb.conf
+
+	# start the service
 	sudo service smbd restart
 	testparm
 
