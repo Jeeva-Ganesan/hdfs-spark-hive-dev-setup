@@ -8,11 +8,11 @@ spark_version := 2.1.1
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 current_dir := $(dir $(mkfile_path)) 
 
-# folders
+# products
+host_name := $(addsufix .local, $(hostname))
 hive_home := $(addsuffix tools/apache-hive-2.1.1-bin, $(current_dir))
 hadoop_home := $(addsuffix tools/hadoop-2.8.0, $(current_dir))
 spark_home := $(addsuffix tools/spark-2.1.1-bin-without-hadoop, $(current_dir))
-host_name := $(addsufix .local, $(hostname))
 
 #########################################
 # Configuration and start/stop commands #
