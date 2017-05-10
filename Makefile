@@ -1,5 +1,17 @@
+#############
+# Variables #
+#############
+
+# path
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
-current_dir := $(dir $(mkfile_path))
+current_dir := $(dir $(mkfile_path)) 
+
+# versions
+hive_version := 2.1.1
+hadoop_version := 2.8.0
+spark_version := 2.1.1
+
+# folders
 hive_home := $(addsuffix tools/apache-hive-2.1.1-bin, $(current_dir))
 hadoop_home := $(addsuffix tools/hadoop-2.8.0, $(current_dir))
 spark_home := $(addsuffix tools/spark-2.1.1-bin-without-hadoop, $(current_dir))
@@ -13,15 +25,15 @@ download: download_hadoop download_spark download_hive
 
 download_hadoop:
 	mkdir -p ${current_dir}tools
-	cd ${current_dir}tools; wget http://www-us.apache.org/dist/hadoop/common/hadoop-2.8.0/hadoop-2.8.0.tar.gz && tar -xvf hadoop-2.8.0.tar.gz && rm -rf hadoop-2.8.0.tar.gz
+	cd ${current_dir}tools; wget http://www-us.apache.org/dist/hadoop/common/hadoop-${hadoop_version}/hadoop-${hadoop_version}.tar.gz && tar -xvf hadoop-${hadoop_version}.tar.gz && rm -rf hadoop-${hadoop_version}.tar.gz
 
 download_spark:
 	mkdir -p ${current_dir}tools
-	cd ${current_dir}tools; wget http://www-us.apache.org/dist/spark/spark-2.1.1/spark-2.1.1-bin-without-hadoop.tgz && tar -xvf spark-2.1.1-bin-without-hadoop.tgz && rm -rf spark-2.1.1-bin-without-hadoop.tgz
+	cd ${current_dir}tools; wget http://www-us.apache.org/dist/spark/spark-${spark_version}/spark-${spark_version}-bin-without-hadoop.tgz && tar -xvf spark-${spark_version}-bin-without-hadoop.tgz && rm -rf spark-${spark_version}-bin-without-hadoop.tgz
 
 download_hive:
 	mkdir -p ${current_dir}tools
-	cd ${current_dir}tools; wget http://www-us.apache.org/dist/hive/hive-2.1.1/apache-hive-2.1.1-bin.tar.gz && tar -xvf apache-hive-2.1.1-bin.tar.gz && rm -rf apache-hive-2.1.1-bin.tar.gz
+	cd ${current_dir}tools; wget http://www-us.apache.org/dist/hive/hive-${hive_version}/apache-hive-${hive_version}-bin.tar.gz && tar -xvf apache-hive-${hive_version}-bin.tar.gz && rm -rf apache-hive-${hive_version}-bin.tar.gz
 
 configure: configure_hadoop configure_spark
 
@@ -48,7 +60,14 @@ configure_hadoop:
 	sed -i '/<\/configuration>/i <property><name>dfs.namenode.name.dir</name><value>file://${current_dir}data/hadoop-namenode</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
 	sed -i '/<\/configuration>/i <property><name>dfs.datanode.data.dir</name><value>file://${current_dir}data/hadoop-datanode</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
 
-	# format the file system
+	# yarn-site.xml
+	sed -i '/<\/configuration>/i <property><name>yarn.nodemanager.aux-services</name><value>mapreduce_shuffle</value></property>' ${hadoop_home}/etc/hadoop/yarn-site.xml
+
+	# mapred-site.xml
+	cp ${hadoop_home}/etc/hadoop/mapred-site.xml.template ${hadoop_home}/etc/hadoop/mapred-site.xml
+	sed -i '/<\/configuration>/i <property><name>mapreduce.framework.name</name><value>yarn</value></property>' ${hadoop_home}/etc/hadoop/mapred-site.xml
+
+	# format the namenode
 	${hadoop_home}/bin/hdfs namenode -format
 
 	# ssh access
@@ -59,9 +78,9 @@ configure_hadoop:
 	ssh-add
 
 start_hadoop:
-	${hadoop_home}/sbin/start-dfs.sh
+	${hadoop_home}/sbin/start-dfs.sh && ${hadoop_home}/sbin/start-yarn.sh
 stop_hadoop:
-	${hadoop_home}/sbin/stop-dfs.sh
+	${hadoop_home}/sbin/stop-dfs.sh && ${hadoop_home}/sbin/stop-yarn.sh
 
 configure_spark:
 	# Change logging level from INFO to WARN
@@ -144,9 +163,9 @@ start_hive_postgres_metastore:
 	${hive_home}/bin/hive --service metastore
 
 
-############################
-# Samba (share VM folders) #
-############################
+#########
+# Samba #
+#########
 
 configure_samba:
 	# install samba
