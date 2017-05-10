@@ -1,15 +1,12 @@
-#############
-# Variables #
-#############
-
-# path
-mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
-current_dir := $(dir $(mkfile_path)) 
 
 # versions
 hive_version := 2.1.1
 hadoop_version := 2.8.0
 spark_version := 2.1.1
+
+# path
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+current_dir := $(dir $(mkfile_path)) 
 
 # folders
 hive_home := $(addsuffix tools/apache-hive-2.1.1-bin, $(current_dir))
