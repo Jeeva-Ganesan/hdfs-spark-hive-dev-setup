@@ -35,49 +35,73 @@ download_hive:
 configure: configure_hadoop configure_spark
 
 configure_hadoop:
-	# install Ubuntu dependencies
-	sudo apt-get install -y ssh rsync
-
 	# set JAVA_HOME
 	sed -i "s#.*export JAVA_HOME.*#export JAVA_HOME=${JAVA_HOME}#g" ${hadoop_home}/etc/hadoop/hadoop-env.sh 
 
 	# set HADOOP_CONF_DIR
 	sed -i "s#.*export HADOOP_CONF_DIR.*#export HADOOP_CONF_DIR=${hadoop_home}/etc/hadoop#" ${hadoop_home}/etc/hadoop/hadoop-env.sh
 
+	# set java heap sizes
+	sed -i 's#.*HADOOP_HEAPSIZE.*#HADOOP_HEAPSIZE="500"#' ${hadoop_home}/etc/hadoop/hadoop-env.sh
+	sed -i 's#.*HADOOP_NAMENODE_INIT_HEAPSIZE.*#HADOOP_NAMENODE_INIT_HEAPSIZE="500"#' ${hadoop_home}/etc/hadoop/hadoop-env.sh
+	sed -i 's#.*HADOOP_JOB_HISTORYSERVER_HEAPSIZE.*#HADOOP_JOB_HISTORYSERVER_HEAPSIZE=250#' ${hadoop_home}/etc/hadoop/hadoop-env.sh
+	sed -i 's#.*JAVA_HEAP_MAX.*#JAVA_HEAP_MAX=Xmx500m#' ${hadoop_home}/etc/hadoop/hadoop-env.sh
+
+	# create users and groups
+	getent group hadoop || groupadd hadoop
+
+	id -u yarn &>/dev/null || useradd -g hadoop yarn
+	id -u hdfs &>/dev/null || useradd -g hadoop hdfs
+	id -u mapred &>/dev/null || useradd -g hadoop mapred
+
+	# create data and log directories
+	mkdir -p ${current_dir}data/hadoop/hdfs/nn
+	mkdir -p ${current_dir}data/hadoop/hdfs/snn
+	mkdir -p ${current_dir}data/hadoop/hdfs/dn
+	mkdir -p ${hadoop_home}/logs	
+
+	chown hdfs:hadoop -R ${current_dir}data/hadoop/hdfs
+	chmod g+w ${hadoop_home}/logs
+	chown yarn:hadoop -R ${hadoop_home}/logs 
+
 	# core-site.xml
 	sed -i '/<\/configuration>/i <property><name>fs.default.name</name><value>hdfs://localhost:9000</value></property>' ${hadoop_home}/etc/hadoop/core-site.xml
-	sed -i '/<\/configuration>/i <property><name>hadoop.tmp.dir</name><value>file://${current_dir}data/hadoop-tmp</value></property>' ${hadoop_home}/etc/hadoop/core-site.xml
-
-	# create the directories
-	mkdir -p ${current_dir}data/hadoop-namenode
-	mkdir -p ${current_dir}data/hadoop-datanode
+	sed -i '/<\/configuration>/i <property><name>hadoop.http.staticuser.user</name><value>hdfs</value></property>' ${hadoop_home}/etc/hadoop/core-site.xml
 
 	# hdfs-site.xml
 	sed -i '/<\/configuration>/i <property><name>dfs.replication</name><value>1</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
-	sed -i '/<\/configuration>/i <property><name>dfs.namenode.name.dir</name><value>file://${current_dir}data/hadoop-namenode</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
-	sed -i '/<\/configuration>/i <property><name>dfs.datanode.data.dir</name><value>file://${current_dir}data/hadoop-datanode</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
-
+	sed -i '/<\/configuration>/i <property><name>dfs.namenode.name.dir</name><value>file://${current_dir}data/hadoop/hdfs/nn</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
+	sed -i '/<\/configuration>/i <property><name>fs.checkpoint.dir</name><value>file://${current_dir}data/hadoop/hdfs/snn</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
+	sed -i '/<\/configuration>/i <property><name>fs.checkpoint.edits.dir</name><value>file://${current_dir}data/hadoop/hdfs/snn</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
+	sed -i '/<\/configuration>/i <property><name>dfs.datanode.data.dir</name><value>file://${current_dir}data/hadoop/hdfs/dn</value></property>' ${hadoop_home}/etc/hadoop/hdfs-site.xml
+	
 	# yarn-site.xml
 	sed -i '/<\/configuration>/i <property><name>yarn.nodemanager.aux-services</name><value>mapreduce_shuffle</value></property>' ${hadoop_home}/etc/hadoop/yarn-site.xml
+	sed -i '/<\/configuration>/i <property><name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name><value>org.apache.hadoop.mapred.ShuffleHandler</value></property>' ${hadoop_home}/etc/hadoop/yarn-site.xml
+	
+	# yarn-env.sh
+	# sed -i "s#.*YARN_HEAPSIZE.*#YARN_HEAPSIZE=500" ${hadoop_home}/etc/hadoop/yarn-env.sh
 
 	# mapred-site.xml
 	cp ${hadoop_home}/etc/hadoop/mapred-site.xml.template ${hadoop_home}/etc/hadoop/mapred-site.xml
 	sed -i '/<\/configuration>/i <property><name>mapreduce.framework.name</name><value>yarn</value></property>' ${hadoop_home}/etc/hadoop/mapred-site.xml
 
 	# format the namenode
-	${hadoop_home}/bin/hdfs namenode -format
+	su - hdfs -c "${hadoop_home}/bin/hdfs namenode -format"
 
-	# ssh access
-	ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
-	cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
-	chmod 0600 ~/.ssh/authorized_keys
-	eval $(ssh-agent)
-	ssh-add
+start_hadoop:	
+	su - hdfs -c "${hadoop_home}/sbin/hadoop-daemon.sh start namenode"
+	su - hdfs -c "${hadoop_home}/sbin/hadoop-daemon.sh start secondarynamenode"
+	su - hdfs -c "${hadoop_home}/sbin/hadoop-daemon.sh start datanode"
+	su - yarn -c "${hadoop_home}/sbin/yarn-daemon.sh start resourcemanager"
+	su - yarn -c "${hadoop_home}/sbin/yarn-daemon.sh start nodemanager"
 
-start_hadoop:
-	${hadoop_home}/sbin/start-dfs.sh && ${hadoop_home}/sbin/start-yarn.sh
-stop_hadoop:
-	${hadoop_home}/sbin/stop-dfs.sh && ${hadoop_home}/sbin/stop-yarn.sh
+stop_hadoop:	
+	su - hdfs -c "${hadoop_home}/sbin/hadoop-daemon.sh stop secondarynamenode"
+	su - hdfs -c "${hadoop_home}/sbin/hadoop-daemon.sh stop datanode"
+	su - hdfs -c "${hadoop_home}/sbin/hadoop-daemon.sh stop namenode"
+	su - yarn -c "${hadoop_home}/sbin/yarn-daemon.sh stop resourcemanager"
+	su - yarn -c "${hadoop_home}/sbin/yarn-daemon.sh stop nodemanager"
 
 configure_spark:
 	# Change logging level from INFO to WARN
