@@ -56,6 +56,7 @@ configure_hadoop:
 	id -u yarn &>/dev/null || useradd -g hadoop yarn
 	id -u hdfs &>/dev/null || useradd -g hadoop hdfs
 	id -u mapred &>/dev/null || useradd -g hadoop mapred
+	id -u spark &>/dev/null || useradd -g hadoop spark
 
 	# create data and log directories
 	mkdir -p ${current_dir}data/hadoop/hdfs/nn
@@ -135,11 +136,14 @@ configure_spark:
 	# create the directory
 	mkdir -p ${current_dir}data/spark-rdd
 	echo 'export SPARK_LOCAL_DIRS=${current_dir}data/spark-rdd'
+	
+	# change user owner
+	chown spark:hadoop -R ${current_dir}data/spark-rdd
 
 start_spark:
-	${spark_home}/sbin/start-all.sh
+	su - spark -c "${spark_home}/sbin/start-all.sh"
 stop_spark:
-	${spark_home}/sbin/stop-all.sh
+	su - spark -c "${spark_home}/sbin/stop-all.sh
 
 configure_hive:
 	# install jbdc postgres driver
