@@ -56,7 +56,6 @@ configure_hadoop:
 	id -u yarn &>/dev/null || useradd -g hadoop yarn
 	id -u hdfs &>/dev/null || useradd -g hadoop hdfs
 	id -u mapred &>/dev/null || useradd -g hadoop mapred
-	id -u spark &>/dev/null || useradd -g hadoop spark
 
 	# create data and log directories
 	mkdir -p ${current_dir}data/hadoop/hdfs/nn
@@ -137,8 +136,11 @@ configure_spark:
 	mkdir -p ${current_dir}data/spark-rdd
 	echo 'export SPARK_LOCAL_DIRS=${current_dir}data/spark-rdd'
 	
-	# change user owner
-	chown spark:hadoop -R ${current_dir}data/spark-rdd
+	# create users and groups
+	getent group spk || groupadd spk
+	
+	id -u spark &>/dev/null || useradd -g spk spark
+	chown spark:spk -R ${current_dir}data/spark-rdd
 
 start_spark:
 	su - spark -c "${spark_home}/sbin/start-all.sh"
