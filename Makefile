@@ -35,6 +35,9 @@ download_hive:
 configure: configure_hadoop configure_spark
 
 configure_hadoop:
+	#install Ubuntu dependencies
+	sudo apt-get install -y ssh rsync
+
 	# set JAVA_HOME
 	sed -i "s#.*export JAVA_HOME.*#export JAVA_HOME=${JAVA_HOME}#g" ${hadoop_home}/etc/hadoop/hadoop-env.sh 
 
