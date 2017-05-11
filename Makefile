@@ -92,6 +92,14 @@ configure_hadoop:
 	# format the namenode
 	su - hdfs -c "${hadoop_home}/bin/hdfs namenode -format"
 
+	# ssh
+	su - root -c "ssh-keygen -t dsa -P ''-f ~/.ssh/id_sa"
+	su - root -c "cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys"
+	su - root -c "chmod 0600 ~/.ssh/authorized_keys"
+	su - root -c "ssh-agent"
+	su - root -c "eval $(ssh-agent)"
+	su - root -c "ssh-add"
+	
 start_hadoop:	
 	su - hdfs -c "${hadoop_home}/sbin/hadoop-daemon.sh start namenode"
 	su - hdfs -c "${hadoop_home}/sbin/hadoop-daemon.sh start secondarynamenode"
