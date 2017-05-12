@@ -52,10 +52,9 @@ configure_hadoop:
 
 	# create users and groups
 	getent group hadoop || groupadd hadoop
-
-	id -u yarn &>/dev/null || useradd -g hadoop yarn
-	id -u hdfs &>/dev/null || useradd -g hadoop hdfs
-	id -u mapred &>/dev/null || useradd -g hadoop mapred
+	i=$(grep -c 'yarn:' /etc/passwd); i=$((i)); if [ "$i" == 0 ]; then useradd -g hadoop yarn; fi
+	i=$(grep -c 'hdfs:' /etc/passwd); i=$((i)); if [ "$i" == 0 ]; then useradd -g hadoop hdfs; fi
+	i=$(grep -c 'mapred:' /etc/passwd); i=$((i)); if [ "$i" == 0 ]; then useradd -g hadoop mapred; fi
 
 	# create data and log directories
 	mkdir -p ${current_dir}data/hadoop/hdfs/nn
@@ -138,8 +137,7 @@ configure_spark:
 	
 	# create users and groups
 	getent group spk || groupadd spk
-	
-	id -u spark &>/dev/null || useradd -g spk spark
+	i=$(grep -c 'spark:' /etc/passwd); i=$((i)); if [ "$i" == 0 ]; then useradd -g spk spark; fi
 	chown spark:spk -R ${current_dir}data/spark-rdd
 
 start_spark:
