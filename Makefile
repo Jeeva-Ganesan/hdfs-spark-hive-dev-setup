@@ -51,10 +51,10 @@ configure_hadoop:
 	sed -i 's#.*JAVA_HEAP_MAX.*#JAVA_HEAP_MAX=Xmx500m#' ${hadoop_home}/etc/hadoop/hadoop-env.sh
 
 	# create users and groups
-	getent group hadoop || groupadd hadoop
-	i=$(grep -c 'yarn:' /etc/passwd); i=$((i)); if [ "$i" == 0 ]; then useradd -g hadoop yarn; fi
-	i=$(grep -c 'hdfs:' /etc/passwd); i=$((i)); if [ "$i" == 0 ]; then useradd -g hadoop hdfs; fi
-	i=$(grep -c 'mapred:' /etc/passwd); i=$((i)); if [ "$i" == 0 ]; then useradd -g hadoop mapred; fi
+	getent group hadoop || groupadd hadoop 
+	id -u yarn &>/dev/null || useradd -g hadoop yarn
+	id -u hdfs &>/dev/null || useradd -g hadoop hdfs
+	id -u mapred &>/dev/null || useradd -g hadoop mapred
 
 	# create data and log directories
 	mkdir -p ${current_dir}data/hadoop/hdfs/nn
