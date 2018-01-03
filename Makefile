@@ -1,8 +1,8 @@
 
 # versions
 hive_version := 2.1.1
-hadoop_version := 2.8.0
-spark_version := 2.1.1
+hadoop_version := 2.8.1
+spark_version := 2.1.2
 
 # path
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
