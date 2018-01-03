@@ -199,30 +199,6 @@ start_hive_postgres_metastore:
 	${hive_home}/bin/hive --service metastore
 
 
-#########
-# Samba #
-#########
-
-configure_samba:
-	# install samba
-	echo "Installing samba"
-	sudo apt-get install samba
-	sudo smbpasswd -a $(whoami)
-
-	# smb.conf
-	echo 'export [spark]' >> /etc/samba/smb.conf
-	echo 'export path=${current_dir}' >> /etc/samba/smb.conf
-	echo 'export available=yes' >> /etc/samba/smb.conf
-	echo 'valid users = $(whoami)' >> /etc/samba/smb.conf
-	echo 'read only = no' >> /etc/samba/smb.conf
-	echo 'browseable = yes' >> /etc/samba/smb.conf
-	echo 'public = yes' >> /etc/samba/smb.conf
-	echo 'writable = yes' >> /etc/samba/smb.conf
-
-	# start the service
-	sudo service smbd restart
-	testparm
-
 ######################
 # Interactive shells #
 ######################
